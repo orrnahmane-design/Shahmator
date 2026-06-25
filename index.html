@@ -2,94 +2,85 @@
 <html lang="he">
 <head>
   <meta charset="UTF-8">
-  <title>שחמט נגד רובוט</title>
+  <title>לוח שחמט אמיתי</title>
+
+  <!-- chessboard.js -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard.min.css">
 
   <style>
     body {
-      font-family: Arial, sans-serif;
+      font-family: Arial;
       text-align: center;
       background: #f2f2f2;
     }
 
-    h2 {
-      margin-top: 20px;
+    #board {
+      width: 400px;
+      margin: 20px auto;
     }
 
     #status {
-      margin-top: 10px;
       font-size: 18px;
-    }
-
-    button {
-      margin-top: 15px;
-      padding: 10px 18px;
-      cursor: pointer;
-      font-size: 16px;
+      margin-top: 10px;
     }
   </style>
 </head>
+
 <body>
 
-<h2>שחמט נגד רובוט 🤖♟️</h2>
+<h2>שחמט ♟️</h2>
 
-<div id="status">מוכן למשחק</div>
+<div id="board"></div>
+<div id="status">תור: לבן</div>
 
-<button onclick="startGame()">התחל משחק (e4)</button>
-
-<script src="https://cdn.jsdelivr.net/npm/chess.js@0.13.4/chess.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.13.4/chess.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard.min.js"></script>
 
 <script>
 const game = new Chess();
 const statusEl = document.getElementById("status");
 
-function updateStatus(text) {
-  statusEl.innerText = text;
-}
-
-// מהלך של הרובוט
-function botMove() {
-  if (game.game_over()) {
-    updateStatus("המשחק נגמר");
-    return;
+function updateStatus() {
+  if (game.in_checkmate()) {
+    statusEl.innerText = "מט! המשחק נגמר";
+  } else if (game.in_draw()) {
+    statusEl.innerText = "תיקו";
+  } else {
+    statusEl.innerText = "תור: " + (game.turn() === 'w' ? "לבן" : "שחור");
   }
-
-  const moves = game.moves();
-
-  if (moves.length === 0) return;
-
-  const randomMove = moves[Math.floor(Math.random() * moves.length)];
-  game.move(randomMove);
-
-  console.log("Bot played:", randomMove);
-
-  updateStatus("הרובוט שיחק: " + randomMove);
 }
 
-// מהלך של השחקן
-function playerMove(move) {
-  const result = game.move(move);
+// יצירת הלוח
+const board = Chessboard('board', {
+  draggable: true,
+  position: 'start',
 
-  if (!result) {
-    updateStatus("מהלך לא חוקי ❌");
-    return;
+  onDragStart: function (source, piece) {
+    // מונע הזזה לא בתור שלך
+    if (game.game_over()) return false;
+
+    if (game.turn() === 'w' && piece.startsWith('b')) return false;
+    if (game.turn() === 'b' && piece.startsWith('w')) return false;
+  },
+
+  onDrop: function (source, target) {
+    const move = game.move({
+      from: source,
+      to: target,
+      promotion: 'q'
+    });
+
+    if (move === null) return 'snapback';
+
+    updateStatus();
+  },
+
+  onSnapEnd: function () {
+    board.position(game.fen());
   }
+});
 
-  console.log("Player played:", move);
-
-  updateStatus("השחקן שיחק: " + move);
-
-  setTimeout(botMove, 700);
-}
-
-// התחלת משחק
-function startGame() {
-  game.reset();
-  updateStatus("התחלת משחק...");
-
-  setTimeout(() => {
-    playerMove("e4");
-  }, 500);
-}
+updateStatus();
 </script>
 
 </body>
