@@ -1,268 +1,92 @@
 <!DOCTYPE html>
 <html lang="he">
 <head>
-    <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#b58863">
-<meta charset="UTF-8">
-<title>שחמט</title>
+  <meta charset="UTF-8">
+  <title>שחמט נגד רובוט</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background: #f2f2f2;
+    }
 
-<style>
-#board{
-    display:grid;
-    grid-template-columns:repeat(8,60px);
-    width:480px;
-    border:2px solid black;
-}
+    h2 {
+      margin-top: 20px;
+    }
 
-.square{
-    width:60px;
-    height:60px;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    font-size:40px;
-    cursor:pointer;
-    user-select:none;
-    position:relative;
-}
+    #status {
+      margin-top: 10px;
+      font-size: 18px;
+    }
 
-.light{background:#f0d9b5;}
-.dark{background:#b58863;}
-
-.move-dot{
-    width:12px;
-    height:12px;
-    background:rgba(120,120,120,0.5);
-    border-radius:50%;
-    position:absolute;
-    left:50%;
-    top:50%;
-    transform:translate(-50%,-50%);
-}
-</style>
+    button {
+      margin-top: 10px;
+      padding: 8px 16px;
+      cursor: pointer;
+    }
+  </style>
 </head>
-
 <body>
 
-<div id="board"></div>
+<h2>שחמט נגד רובוט 🤖♟️</h2>
+
+<div id="status">תור: שחקן</div>
+
+<button onclick="playExampleMove()">נסה מהלך לדוגמה (e4)</button>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/1.0.0/chess.min.js"></script>
 
 <script>
+const game = new Chess();
 
-const boardEl=document.getElementById("board");
+const statusEl = document.getElementById("status");
 
-let selected=null;
-let possibleMoves=[];
-let currentPlayer="white";
-
-let board=[
-["rook","knight","bishop","queen","king","bishop","knight","rook"],
-["pawn","pawn","pawn","pawn","pawn","pawn","pawn","pawn"],
-["","","","","","","",""],
-["","","","","","","",""],
-["","","","","","","",""],
-["","","","","","","",""],
-["pawn","pawn","pawn","pawn","pawn","pawn","pawn","pawn"],
-["rook","knight","bishop","queen","king","bishop","knight","rook"]
-];
-
-let color=[
-["black","black","black","black","black","black","black","black"],
-["black","black","black","black","black","black","black","black"],
-["","","","","","","",""],
-["","","","","","","",""],
-["","","","","","","",""],
-["","","","","","","",""],
-["white","white","white","white","white","white","white","white"],
-["white","white","white","white","white","white","white","white"]
-];
-
-function piece(t,c){
-    const m={
-        pawn:["♟","♙"],
-        rook:["♜","♖"],
-        knight:["♞","♘"],
-        bishop:["♝","♗"],
-        queen:["♛","♕"],
-        king:["♚","♔"]
-    };
-    return c==="white"?m[t][1]:m[t][0];
+// עדכון מצב
+function updateStatus() {
+  if (game.game_over()) {
+    statusEl.innerText = "המשחק נגמר!";
+  } else {
+    statusEl.innerText = "תור: שחקן";
+  }
 }
 
-function isMove(r,c){
-    return possibleMoves.some(m=>m.r===r && m.c===c);
+// מהלך שחקן
+function playerMove(move) {
+  const result = game.move(move);
+
+  if (!result) {
+    alert("מהלך לא חוקי!");
+    return;
+  }
+
+  console.log("Player:", move);
+
+  updateStatus();
+
+  setTimeout(botMove, 500);
 }
 
-function render(){
+// מהלך רובוט
+function botMove() {
+  const moves = game.moves();
 
-    boardEl.innerHTML="";
+  if (moves.length === 0) return;
 
-    for(let r=0;r<8;r++){
-        for(let c=0;c<8;c++){
+  const randomMove = moves[Math.floor(Math.random() * moves.length)];
+  game.move(randomMove);
 
-            const sq=document.createElement("div");
-            sq.className="square";
+  console.log("Bot:", randomMove);
 
-            if((r+c)%2===0)sq.classList.add("light");
-            else sq.classList.add("dark");
-
-            if(board[r][c]){
-                sq.textContent=piece(board[r][c],color[r][c]);
-            }
-
-            if(isMove(r,c)){
-                const dot=document.createElement("div");
-                dot.className="move-dot";
-                sq.appendChild(dot);
-            }
-
-            sq.onclick=()=>click(r,c);
-
-            boardEl.appendChild(sq);
-        }
-    }
+  updateStatus();
 }
 
-function click(r,c){
-
-    const p=board[r][c];
-    const col=color[r][c];
-
-    if(!selected){
-
-        if(p && col===currentPlayer){
-            selected={r,c};
-            possibleMoves=getMoves(r,c);
-        }
-
-    } else {
-
-        if(isMove(r,c)){
-            move(selected.r,selected.c,r,c);
-            currentPlayer=currentPlayer==="white"?"black":"white";
-        }
-
-        selected=null;
-        possibleMoves=[];
-    }
-
-    render();
+// כפתור בדיקה
+function playExampleMove() {
+  playerMove("e4");
 }
 
-function move(r1,c1,r2,c2){
-
-    board[r2][c2]=board[r1][c1];
-    color[r2][c2]=color[r1][c1];
-
-    board[r1][c1]="";
-    color[r1][c1]="";
-}
-
-function slide(r,c,dr,dc,col){
-
-    let moves=[];
-    let nr=r+dr,nc=c+dc;
-
-    while(board[nr]?.[nc]!==undefined){
-
-        if(!board[nr][nc]){
-            moves.push({r:nr,c:nc});
-        } else {
-            if(color[nr][nc]!==col){
-                moves.push({r:nr,c:nc});
-            }
-            break;
-        }
-
-        nr+=dr;
-        nc+=dc;
-    }
-
-    return moves;
-}
-
-function getMoves(r,c){
-
-    const type=board[r][c];
-    const col=color[r][c];
-
-    let moves=[];
-
-    if(type==="pawn"){
-
-        let dir=col==="white"?-1:1;
-
-        if(board[r+dir]?.[c]===""){
-            moves.push({r:r+dir,c});
-
-            let start=col==="white"?6:1;
-
-            if(r===start && board[r+dir*2]?.[c]===""){
-                moves.push({r:r+dir*2,c});
-            }
-        }
-
-        for(let dc of [-1,1]){
-            if(board[r+dir]?.[c+dc] &&
-               color[r+dir][c+dc]!==col){
-                moves.push({r:r+dir,c:c+dc});
-            }
-        }
-    }
-
-    if(type==="knight"){
-        let j=[[2,1],[2,-1],[-2,1],[-2,-1],[1,2],[1,-2],[-1,2],[-1,-2]];
-        for(let [dr,dc] of j){
-            let nr=r+dr,nc=c+dc;
-            if(board[nr]?.[nc]!==undefined){
-                if(!board[nr][nc] || color[nr][nc]!==col){
-                    moves.push({r:nr,c:nc});
-                }
-            }
-        }
-    }
-
-    if(type==="rook"){
-        moves.push(...slide(r,c,1,0,col));
-        moves.push(...slide(r,c,-1,0,col));
-        moves.push(...slide(r,c,0,1,col));
-        moves.push(...slide(r,c,0,-1,col));
-    }
-
-    if(type==="bishop"){
-        moves.push(...slide(r,c,1,1,col));
-        moves.push(...slide(r,c,1,-1,col));
-        moves.push(...slide(r,c,-1,1,col));
-        moves.push(...slide(r,c,-1,-1,col));
-    }
-
-    if(type==="queen"){
-        moves.push(...slide(r,c,1,0,col));
-        moves.push(...slide(r,c,-1,0,col));
-        moves.push(...slide(r,c,0,1,col));
-        moves.push(...slide(r,c,0,-1,col));
-        moves.push(...slide(r,c,1,1,col));
-        moves.push(...slide(r,c,1,-1,col));
-        moves.push(...slide(r,c,-1,1,col));
-        moves.push(...slide(r,c,-1,-1,col));
-    }
-
-    if(type==="king"){
-        let k=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
-        for(let [dr,dc] of k){
-            let nr=r+dr,nc=c+dc;
-            if(board[nr]?.[nc]!==undefined){
-                if(!board[nr][nc] || color[nr][nc]!==col){
-                    moves.push({r:nr,c:nc});
-                }
-            }
-        }
-    }
-
-    return moves;
-}
-
-render();
-
+// התחלה
+updateStatus();
 </script>
 
 </body>
