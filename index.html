@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>שחמט נגד רובוט</title>
+
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -20,9 +21,10 @@
     }
 
     button {
-      margin-top: 10px;
-      padding: 8px 16px;
+      margin-top: 15px;
+      padding: 10px 18px;
       cursor: pointer;
+      font-size: 16px;
     }
   </style>
 </head>
@@ -30,44 +32,27 @@
 
 <h2>שחמט נגד רובוט 🤖♟️</h2>
 
-<div id="status">תור: שחקן</div>
+<div id="status">מוכן למשחק</div>
 
-<button onclick="playExampleMove()">נסה מהלך לדוגמה (e4)</button>
+<button onclick="startGame()">התחל משחק (e4)</button>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/1.0.0/chess.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chess.js@0.13.4/chess.min.js"></script>
 
 <script>
 const game = new Chess();
-
 const statusEl = document.getElementById("status");
 
-// עדכון מצב
-function updateStatus() {
-  if (game.game_over()) {
-    statusEl.innerText = "המשחק נגמר!";
-  } else {
-    statusEl.innerText = "תור: שחקן";
-  }
+function updateStatus(text) {
+  statusEl.innerText = text;
 }
 
-// מהלך שחקן
-function playerMove(move) {
-  const result = game.move(move);
-
-  if (!result) {
-    alert("מהלך לא חוקי!");
+// מהלך של הרובוט
+function botMove() {
+  if (game.game_over()) {
+    updateStatus("המשחק נגמר");
     return;
   }
 
-  console.log("Player:", move);
-
-  updateStatus();
-
-  setTimeout(botMove, 500);
-}
-
-// מהלך רובוט
-function botMove() {
   const moves = game.moves();
 
   if (moves.length === 0) return;
@@ -75,18 +60,36 @@ function botMove() {
   const randomMove = moves[Math.floor(Math.random() * moves.length)];
   game.move(randomMove);
 
-  console.log("Bot:", randomMove);
+  console.log("Bot played:", randomMove);
 
-  updateStatus();
+  updateStatus("הרובוט שיחק: " + randomMove);
 }
 
-// כפתור בדיקה
-function playExampleMove() {
-  playerMove("e4");
+// מהלך של השחקן
+function playerMove(move) {
+  const result = game.move(move);
+
+  if (!result) {
+    updateStatus("מהלך לא חוקי ❌");
+    return;
+  }
+
+  console.log("Player played:", move);
+
+  updateStatus("השחקן שיחק: " + move);
+
+  setTimeout(botMove, 700);
 }
 
-// התחלה
-updateStatus();
+// התחלת משחק
+function startGame() {
+  game.reset();
+  updateStatus("התחלת משחק...");
+
+  setTimeout(() => {
+    playerMove("e4");
+  }, 500);
+}
 </script>
 
 </body>
