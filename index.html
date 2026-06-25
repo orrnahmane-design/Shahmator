@@ -2,123 +2,95 @@
 <html lang="he">
 <head>
   <meta charset="UTF-8">
-  <title>שחמט עם סימון אכילות</title>
-
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard.min.css">
+  <title>שחמט נגד רובוט</title>
 
   <style>
     body {
-      font-family: Arial;
+      font-family: Arial, sans-serif;
       text-align: center;
       background: #f2f2f2;
     }
 
-    #board {
-      width: 420px;
-      margin: 20px auto;
+    h2 {
+      margin-top: 20px;
     }
 
     #status {
-      font-size: 18px;
       margin-top: 10px;
+      font-size: 18px;
     }
 
-    /* 🔴 עיגול על משבצות שאפשר לאכול בהן */
-    .highlight-capture {
-      box-shadow: inset 0 0 0 4px red;
-      border-radius: 50%;
-    }
-
-    /* 🟡 עיגול עדין על מהלכים רגילים (אופציונלי) */
-    .highlight-move {
-      box-shadow: inset 0 0 0 3px rgba(0,0,0,0.3);
-      border-radius: 50%;
+    button {
+      margin-top: 15px;
+      padding: 10px 18px;
+      cursor: pointer;
+      font-size: 16px;
     }
   </style>
 </head>
-
 <body>
 
-<h2>שחמט ♟️</h2>
-<div id="board"></div>
-<div id="status">תור: לבן</div>
+<h2>שחמט נגד רובוט 🤖♟️</h2>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.13.4/chess.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard.min.js"></script>
+<div id="status">מוכן למשחק</div>
+
+<button onclick="startGame()">התחל משחק (e4)</button>
+
+<script src="https://cdn.jsdelivr.net/npm/chess.js@0.13.4/chess.min.js"></script>
 
 <script>
 const game = new Chess();
 const statusEl = document.getElementById("status");
 
-function updateStatus() {
-  statusEl.innerText = "תור: " + (game.turn() === 'w' ? "לבן" : "שחור");
+function updateStatus(text) {
+  statusEl.innerText = text;
 }
 
-/* 🧹 ניקוי הדגשות */
-function removeHighlights() {
-  document.querySelectorAll('.square-55d63').forEach(sq => {
-    sq.classList.remove('highlight-capture');
-    sq.classList.remove('highlight-move');
-  });
-}
-
-/* 🎯 סימון מהלכים */
-function highlightSquares(moves) {
-  removeHighlights();
-
-  moves.forEach(m => {
-    const squareEl = document.querySelector('[data-square="' + m.to + '"]');
-
-    if (!squareEl) return;
-
-    if (m.captured) {
-      squareEl.classList.add('highlight-capture'); // 🔴 עיגול אדום לאכילה
-    } else {
-      squareEl.classList.add('highlight-move'); // אפור רגיל
-    }
-  });
-}
-
-/* ♟️ לוח */
-const board = Chessboard('board', {
-  draggable: true,
-  position: 'start',
-
-  onDragStart: function (source, piece) {
-    if (game.game_over()) return false;
-    if (game.turn() === 'w' && piece.startsWith('b')) return false;
-    if (game.turn() === 'b' && piece.startsWith('w')) return false;
-
-    const moves = game.moves({
-      square: source,
-      verbose: true
-    });
-
-    highlightSquares(moves);
-  },
-
-  onDrop: function (source, target) {
-    removeHighlights();
-
-    const move = game.move({
-      from: source,
-      to: target,
-      promotion: 'q'
-    });
-
-    if (move === null) return 'snapback';
-
-    updateStatus();
-  },
-
-  onSnapEnd: function () {
-    board.position(game.fen());
+// מהלך של הרובוט
+function botMove() {
+  if (game.game_over()) {
+    updateStatus("המשחק נגמר");
+    return;
   }
-});
 
-updateStatus();
+  const moves = game.moves();
+
+  if (moves.length === 0) return;
+
+  const randomMove = moves[Math.floor(Math.random() * moves.length)];
+  game.move(randomMove);
+
+  console.log("Bot played:", randomMove);
+
+  updateStatus("הרובוט שיחק: " + randomMove);
+}
+
+// מהלך של השחקן
+function playerMove(move) {
+  const result = game.move(move);
+
+  if (!result) {
+    updateStatus("מהלך לא חוקי ❌");
+    return;
+  }
+
+  console.log("Player played:", move);
+
+  updateStatus("השחקן שיחק: " + move);
+
+  setTimeout(botMove, 700);
+}
+
+// התחלת משחק
+function startGame() {
+  game.reset();
+  updateStatus("התחלת משחק...");
+
+  setTimeout(() => {
+    playerMove("e4");
+  }, 500);
+}
 </script>
 
 </body>
 </html>
-
